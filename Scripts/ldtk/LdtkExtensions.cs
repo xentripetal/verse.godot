@@ -12,15 +12,15 @@ namespace Verse.ldtk {
 
 	public partial class TilesetDefinition {
 		public Rect2 getTileRegion(int tileId) {
-			var atlasGridWidth = PxWid / TileGridSize;
 			var pixelTile = getTilePxCoords(tileId);
 
 			return new Rect2(pixelTile, new Vector2(TileGridSize, TileGridSize));
 		}
 
 		public Vector2 getTileGridCoords(int tileId) {
-			var y = tileId / TileGridSize;
-			var x = tileId - TileGridSize * y;
+			var atlasGridWidth = PxWid / TileGridSize;
+			var y = tileId / atlasGridWidth;
+			var x = tileId - atlasGridWidth * y;
 			return new Vector2(x, y);
 		}
 

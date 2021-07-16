@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Verse.ldtk;
+using Verse.Scripts;
 
 public class ldtkLoader : Node {
 	// Declare member variables here. Examples:
@@ -32,7 +33,8 @@ public class ldtkLoader : Node {
 				set.CreateTile(i);
 				set.TileSetTileMode(i, TileSet.TileMode.SingleTile);
 				set.TileSetTexture(i, texture);
-				set.TileSetRegion(i, def.getTileRegion(i));
+				var region = def.getTileRegion(i);
+				set.TileSetRegion(i, region);
 			}
 
 			TileSets.Add(def.Uid, set);
@@ -43,44 +45,51 @@ public class ldtkLoader : Node {
 
 	public void ImportLevel(LdtkJson world, long uid) {
 		var level = world.Levels.First(x => x.Uid == uid);
-		foreach (var layer in level.LayerInstances) {
+		for (int i = 0; i < level.LayerInstances.Length; i++) {
+			var layer = level.LayerInstances[i];
 			switch (layer.Type) {
 				case LayerInstance.LayerType.Entities:
-					ImportEntitiesLayer(world, level, layer);
+					ImportEntitiesLayer(world, level, layer, level.LayerInstances.Length - i);
 					break;
 				case LayerInstance.LayerType.Tiles:
 				case LayerInstance.LayerType.IntGrid:
 				case LayerInstance.LayerType.AutoLayer:
-					ImportTileLayer(world, level, layer);
+					ImportTileLayer(world, level, layer, level.LayerInstances.Length -i);
 					break;
 			}
 		}
 	}
 
-	private void ImportTileLayer(LdtkJson world, Level level, LayerInstance layer) {
+	private void ImportTileLayer(LdtkJson world, Level level, LayerInstance layer, int index) {
 		var def = world.Defs.Layers.First(x => x.Uid == layer.LayerDefUid);
 		var size = layer.GridSize;
 
-		var map = new TileMap();
+		var map = new StackableTileMap();
+		map.ZAsRelative = true;
+		map.ZIndex = index;
 		Debug.Assert(layer.TilesetDefUid != null, "layer.TilesetDefUid != null");
 		map.TileSet = TileSets[(long) layer.TilesetDefUid];
 		map.Name = level.Identifier + "_" + layer.Identifier;
 		map.Visible = layer.Visible;
+		var alpha = (byte) (layer.Opacity * 255);
+		map.Modulate = Color.Color8(255, 255, 255, alpha);
 		map.Position = new Vector2(layer.PxTotalOffsetX, layer.PxTotalOffsetY);
 		map.CellSize = new Vector2(layer.GridSize, layer.GridSize);
-		foreach (var tile in layer.AutoLayerTiles) {
-			map.SetCell((int) (tile.Px[0] / size), (int) (tile.Px[1] / size), (int) tile.T, (tile.F & 1) == 1,
-				(tile.F & 2) == 2, false);
+		if (layer.AutoLayerTiles.Length > 0 || layer.GridTiles.Length > 0) {
+			var tiles = layer.AutoLayerTiles.Length > 0 ? layer.AutoLayerTiles : layer.GridTiles;
+			foreach (var tile in tiles) {
+				map.AppendCell((int) (tile.Px[0] / size), (int) (tile.Px[1] / size), (int) tile.T, (tile.F & 1) == 1,
+					(tile.F & 2) == 2);
+			}
+		} else if (layer.IntGridCsv.Length > 0) {
+			throw new NotImplementedException("Plain int grids are not currently supported.");
 		}
 
-		//def.TilePivotY
-		//layer.Opacity
-		//layer.Type
 		AddChild(map);
 		GD.Print(layer.Identifier + ": " + layer.Type);
 	}
 
-	void ImportEntitiesLayer(LdtkJson world, Level level, LayerInstance layer) {
+	void ImportEntitiesLayer(LdtkJson world, Level level, LayerInstance layer, int index) {
 		GD.Print("Entity Layer not supported");
 	}
 
