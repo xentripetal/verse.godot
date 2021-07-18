@@ -20,32 +20,31 @@ namespace Verse {
 		}
 
 		void Initialize() {
-			for (var i = 0; i < LdtkLevel.LayerInstances.Length; i++) {
+			for (var i = LdtkLevel.LayerInstances.Length - 1; i >= 0; i--) {
 				var layer = LdtkLevel.LayerInstances[i];
 				switch (layer.Type) {
 					case LayerInstance.LayerType.Entities:
-						InitializeEntitiesLayer(layer, LdtkLevel.LayerInstances.Length - i);
+						InitializeEntitiesLayer(layer);
 						break;
 					case LayerInstance.LayerType.Tiles:
 					case LayerInstance.LayerType.IntGrid:
 					case LayerInstance.LayerType.AutoLayer:
-						InitializeTileLayer(layer, LdtkLevel.LayerInstances.Length - i);
+						InitializeTileLayer(layer);
 						break;
 				}
 			}
 		}
 
-		void InitializeEntitiesLayer(LayerInstance layer, int index) {
+		void InitializeEntitiesLayer(LayerInstance layer) {
 			GD.Print("Entites layer currently not supported");
 		}
 
-		void InitializeTileLayer(LayerInstance layer, int index) {
+		void InitializeTileLayer(LayerInstance layer) {
 			var size = layer.GridSize;
 			var alpha = (byte) (layer.Opacity * 255);
 			Debug.Assert(layer.TilesetDefUid != null, "layer.TilesetDefUid != null");
 			var map = new StackableTileMap {
 				ZAsRelative = true,
-				ZIndex = index * 255,
 				TileSet = World.TileSets[(long) layer.TilesetDefUid],
 				Name = LdtkLevel.Identifier + "_" + layer.Identifier,
 				Visible = layer.Visible,

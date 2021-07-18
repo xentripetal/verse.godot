@@ -50,7 +50,7 @@ namespace Verse.Scripts {
 			var tm = new TileMap();
 			tm.TileSet = _tileSet;
 			tm.ZAsRelative = true;
-			tm.ZIndex = _tileMaps.Count;
+			//tm.ZIndex = _tileMaps.Count;
 			tm.CellSize = _cellSize;
 			AddChild(tm);
 			_tileMaps.Add(tm);
