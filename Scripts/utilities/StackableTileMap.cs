@@ -59,10 +59,8 @@ namespace Verse.Scripts {
 
 		public void SetCell(int x, int y, byte layer, int tile, bool flipX = false, bool flipY = false,
 			bool transpose = false) {
-			if (_tileMaps.Count <= layer) {
-				for (int i = _tileMaps.Count - 1; i <= layer; i++) {
-					addLayer();
-				}
+			for (int i = layer; i >  _tileMaps.Count - 1; i--) {
+				addLayer();
 			}
 
 			_tileMaps[layer].SetCell(x, y, tile, flipX, flipY, transpose);
@@ -70,10 +68,6 @@ namespace Verse.Scripts {
 
 		public void AppendCell(int x, int y, int tile, bool flipX = false, bool flipY = false,
 			bool transpose = false) {
-			if (_tileMaps.Count == 0) {
-				SetCell(x, y, 0, tile, flipX, flipY, transpose);
-				return;
-			}
 
 			foreach (var tilemap in _tileMaps) {
 				if (tilemap.GetCell(x, y) == -1) {
@@ -83,6 +77,18 @@ namespace Verse.Scripts {
 			}
 
 			addLayer().SetCell(x, y, tile, flipX, flipY, transpose);
+		}
+
+		public int GetBottomCell(int x, int y) {
+			return GetCell(x, y, 0);
+		}
+		
+		public int GetCell(int x, int y, int layer) {
+			if (layer > _tileMaps.Count - 1) {
+				return -1;
+			}
+
+			return _tileMaps[layer].GetCell(x, y);
 		}
 
 		public void ClearCell(int x, int y) {

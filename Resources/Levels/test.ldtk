@@ -348,7 +348,7 @@
 						"perlinOctaves": 2
 					}
 				] },
-				{ "uid": 16, "name": "Bg", "active": true, "collapsed": true, "isOptional": false, "rules": [
+				{ "uid": 16, "name": "Bg", "active": true, "collapsed": false, "isOptional": false, "rules": [
 					{
 						"uid": 19,
 						"active": true,

@@ -13,19 +13,24 @@ public class ldtkLoader : Node {
 	[Export] public string LevelsRoot = "res://Resources/Levels/";
 	public string LevelName = "test.ldtk";
 	public static Dictionary<long, TileSet> TileSets = new Dictionary<long, TileSet>();
+	public static Dictionary<long, List<StackableTileMap>> TileMaps = new Dictionary<long, List<StackableTileMap>>();
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready() {
 		var world = LoadCompleteMap(LevelName);
 		ImportLevel(world, "Dead_end_east");
+		GD.Print("Done");
 	}
 
 	public void ImportLevel(LdtkJson world, String identifier) {
 		var uid = world.Levels.First(x => x.Identifier == identifier).Uid;
-		foreach (var def in world.Defs.Tilesets) {
+		ImportLevel(world, uid);
+	}
+
+	void ImportTilesets(TilesetDefinition[] tilesets) {
+		foreach (var def in tilesets) {
 			var set = new TileSet();
 			var texture = GD.Load<Texture>(LevelsRoot + def.RelPath);
-			var image = texture.GetData();
 			var w = (def.PxWid - def.Padding) / (def.TileGridSize + def.Spacing);
 			var h = (def.PxHei - def.Padding) / (def.TileGridSize + def.Spacing);
 			var size = w * h;
@@ -39,13 +44,12 @@ public class ldtkLoader : Node {
 
 			TileSets.Add(def.Uid, set);
 		}
-
-		ImportLevel(world, uid);
 	}
 
 	public void ImportLevel(LdtkJson world, long uid) {
 		var level = world.Levels.First(x => x.Uid == uid);
-		for (int i = 0; i < level.LayerInstances.Length; i++) {
+		ImportTilesets(world.Defs.Tilesets);
+		for (var i = 0; i < level.LayerInstances.Length; i++) {
 			var layer = level.LayerInstances[i];
 			switch (layer.Type) {
 				case LayerInstance.LayerType.Entities:
@@ -64,17 +68,25 @@ public class ldtkLoader : Node {
 		var def = world.Defs.Layers.First(x => x.Uid == layer.LayerDefUid);
 		var size = layer.GridSize;
 
-		var map = new StackableTileMap();
-		map.ZAsRelative = true;
-		map.ZIndex = index;
-		Debug.Assert(layer.TilesetDefUid != null, "layer.TilesetDefUid != null");
-		map.TileSet = TileSets[(long) layer.TilesetDefUid];
-		map.Name = level.Identifier + "_" + layer.Identifier;
-		map.Visible = layer.Visible;
 		var alpha = (byte) (layer.Opacity * 255);
-		map.Modulate = Color.Color8(255, 255, 255, alpha);
-		map.Position = new Vector2(layer.PxTotalOffsetX, layer.PxTotalOffsetY);
-		map.CellSize = new Vector2(layer.GridSize, layer.GridSize);
+		Debug.Assert(layer.TilesetDefUid != null, "layer.TilesetDefUid != null");
+		var map = new StackableTileMap {
+			ZAsRelative = true,
+			ZIndex = index * 255,
+			TileSet = TileSets[(long) layer.TilesetDefUid],
+			Name = level.Identifier + "_" + layer.Identifier,
+			Visible = layer.Visible,
+			Modulate = Color.Color8(255, 255, 255, alpha),
+			Position = new Vector2(layer.PxTotalOffsetX, layer.PxTotalOffsetY),
+			CellSize = new Vector2(layer.GridSize, layer.GridSize)
+		};
+
+		if (!TileMaps.TryGetValue(level.Uid, out var maps)) {
+			maps = new List<StackableTileMap>();
+			TileMaps[level.Uid] = maps;
+		}
+		maps.Add(map);
+
 		if (layer.AutoLayerTiles.Length > 0 || layer.GridTiles.Length > 0) {
 			var tiles = layer.AutoLayerTiles.Length > 0 ? layer.AutoLayerTiles : layer.GridTiles;
 			foreach (var tile in tiles) {
@@ -111,7 +123,7 @@ public class ldtkLoader : Node {
 		foreach (var level in externalLevels) {
 			var match = json.Levels.Select((v, i) => new {v, i}).FirstOrDefault(x => x.v.Uid == level.Uid);
 			if (match == null) {
-				json.Levels = json.Levels.Concat(new Level[] {level}).ToArray();
+				json.Levels = json.Levels.Concat(new[] {level}).ToArray();
 			}
 			else {
 				json.Levels.SetValue(level, match.i);
