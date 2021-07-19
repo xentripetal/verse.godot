@@ -32,6 +32,13 @@ namespace Verse.ldtk {
 		}
 	}
 
+	public partial class Level {
+		public bool Contains(Vector2 pixelPos) {
+			var bounds = new Rect2(new Vector2(WorldX, WorldY), PxWid, PxHei);
+			return bounds.HasPoint(pixelPos);
+		}
+	}
+
 	public partial class LayerInstance {
 		/// <summary>
 		/// Layer type (possible values: IntGrid, Entities, Tiles or AutoLayer)
@@ -45,5 +52,6 @@ namespace Verse.ldtk {
 			IntGrid,
 			AutoLayer
 		}
+
 	}
 }

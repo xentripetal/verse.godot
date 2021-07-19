@@ -13,6 +13,7 @@ namespace Verse {
 
 		public override void _Ready() {
 			json = LoadCompleteMap("test.ldtk");
+			//GetTree().DebugCollisionsHint = true;
 			_world = new World(json, 29);
 			AddChild(_world);
 		}

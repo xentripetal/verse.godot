@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Godot;
 
-namespace Verse.Scripts {
+namespace Verse.Utilities{
 	public class StackableTileMap : Node2D {
 		private List<TileMap> _tileMaps = new List<TileMap>();
 
@@ -48,6 +48,7 @@ namespace Verse.Scripts {
 				                            " internal layers in a stackable tilemap");
 			}
 			var tm = new TileMap();
+			tm.ShowCollision = true;
 			tm.TileSet = _tileSet;
 			tm.ZAsRelative = true;
 			//tm.ZIndex = _tileMaps.Count;

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Verse.Scripts {
+namespace Verse.Utilities{
 	public static class LINQExtensions {
 		public static T FirstOr<T>(this IEnumerable<T>? source, T alternative) {
 			if (source == null) {

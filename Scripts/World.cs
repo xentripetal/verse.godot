@@ -1,12 +1,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
+using Newtonsoft.Json.Linq;
 using Verse.ldtk;
-using Verse.Scripts;
+using Verse.Utilities;
 
 namespace Verse {
 	public class World : Node2D {
-		public delegate void LevelChanged(long newLevel, long previousLevel);
+		[Signal]
+		public delegate void LevelChanged(Level newLevel, Level previousLevel);
 		
 		[Export] public string LevelsRoot = "res://Resources/Levels/";
 		public long DefaultLevel = 0;
@@ -53,12 +55,14 @@ namespace Verse {
 			if (!InitializedLevels.TryGetValue(ldtkLevel.Uid, out var level)) {
 				level = InitializeLevel(ldtkLevel);
 			}
+			
 
 			if (CurrentLevel != null) {
-				CurrentLevel.Visible = false;
+				RemoveChild(CurrentLevel);
 			}
-			level.Visible = true;
+			AddChild(level);
 			CurrentLevel = level;
+			EmitSignal(nameof(LevelChanged), CurrentLevel);
 		}
 
 
@@ -73,6 +77,19 @@ namespace Verse {
 				var w = (def.PxWid - def.Padding) / (def.TileGridSize + def.Spacing);
 				var h = (def.PxHei - def.Padding) / (def.TileGridSize + def.Spacing);
 				var size = w * h;
+				//def.EnumTags[0]["enumValueId"]
+				List<int> collisionTiles = new List<int>();
+				foreach (var enumTag in def.EnumTags) {
+					if ((string) enumTag["enumValueId"] != "COLLISION") {
+						continue;
+					}
+
+					var test = (JArray) enumTag["tileIds"];
+					foreach (var token in test) {
+						collisionTiles.Add(token.ToObject<int>());
+					}
+				}
+				
 				for (int i = 0; i < size; i++) {
 					set.CreateTile(i);
 					set.TileSetTileMode(i, TileSet.TileMode.SingleTile);
@@ -81,6 +98,13 @@ namespace Verse {
 					set.TileSetRegion(i, region);
 				}
 
+				var shape = new RectangleShape2D();
+				shape.Extents = new Vector2(def.TileGridSize / 2, def.TileGridSize / 2);
+				set.TileAddShape(0, shape, Transform2D.Identity);
+				foreach (var tile in collisionTiles) { 
+					set.TileSetShape(tile, 0, shape);
+					set.TileSetShapeOffset(tile, 0, new Vector2(def.TileGridSize / 2, def.TileGridSize / 2));
+				}
 				TileSets.Add(def.Uid, set);
 			}
 		}
@@ -88,8 +112,6 @@ namespace Verse {
 		Level InitializeLevel(ldtk.Level ldtkLevel) {
 			var level = new Level(this, ldtkLevel);
 			InitializedLevels.Add(ldtkLevel.Uid, level);
-			level.Visible = false;
-			AddChild(level);
 			return level;
 		}
 	}

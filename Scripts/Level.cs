@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Godot;
 using Verse.ldtk;
-using Verse.Scripts;
+using Verse.Utilities;
 using World = Godot.World;
 
 namespace Verse {
@@ -19,7 +20,32 @@ namespace Verse {
 			Initialize();
 		}
 
+		/**
+		 * Gets the neighbor level connected to this position.
+		 * Must be a border position
+		 */
+		public long GetNeighbor(Vector2 borderPos) {
+			foreach (var neighbor in LdtkLevel.Neighbours) {
+				switch (neighbor.Dir) {
+					case "n": borderPos = borderPos + Vector2.Up;
+						break;
+					case "e": borderPos = borderPos + Vector2.Right;
+						break;
+					case "s": borderPos = borderPos + Vector2.Down;
+						break;
+					case "w": borderPos = borderPos + Vector2.Left;
+						break;
+				}
+				if (World.Json.Levels.First(x => x.Uid == neighbor.LevelUid).Contains(borderPos)) {
+					return neighbor.LevelUid;
+				}
+			}
+
+			return -1;
+		}
+
 		void Initialize() {
+			Position = new Vector2(LdtkLevel.WorldX, LdtkLevel.WorldY);
 			for (var i = LdtkLevel.LayerInstances.Length - 1; i >= 0; i--) {
 				var layer = LdtkLevel.LayerInstances[i];
 				switch (layer.Type) {
